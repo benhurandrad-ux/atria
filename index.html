@@ -188,12 +188,14 @@
   #loader{
     position:fixed;inset:0;z-index:100;background:var(--ink);
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;
-    transition:opacity .18s linear;
+    transition:opacity .25s linear;
   }
   #loader.done{opacity:0;pointer-events:none}
   #loader .a-mark{width:clamp(72px,11vw,128px);height:auto;overflow:visible}
-  .a-stroke{fill:var(--text);clip-path:inset(0 0 100% 0);animation:strokeDown .5s var(--ease-inout) 0s forwards}
-  .a-leg{fill:var(--text);opacity:0;transform:translate(-22px,22px);animation:legIn .35s var(--ease-out) .45s forwards}
+  .a-stroke{fill:var(--text);clip-path:inset(0 0 100% 0);animation:strokeDown .9s var(--ease-inout) .15s forwards}
+  .a-leg{fill:var(--text);opacity:0;transform:translate(-22px,22px);animation:legIn .6s var(--ease-out) 1s forwards}
+  #loader .load-line{position:absolute;bottom:0;left:0;height:2px;width:100%;background:var(--blue);transform:scaleX(0);transform-origin:left;animation:loadBar 2.1s var(--ease-inout) .1s forwards}
+  @keyframes loadBar{to{transform:scaleX(1)}}
   @keyframes strokeDown{to{clip-path:inset(0 0 0% 0)}}
   @keyframes legIn{to{opacity:1;transform:translate(0,0)}}
   #loader .wordmark{display:flex;gap:.12em;font-weight:800;font-stretch:115%;font-size:clamp(16px,2vw,22px);letter-spacing:.42em;text-indent:.42em}
@@ -723,9 +725,10 @@
     <polygon class="a-leg" points="34,68 45,68 29,112 18,112"/>
   </svg>
   <div class="wordmark">
-    <span style="animation-delay:.70s">A</span><span style="animation-delay:.76s">T</span><span style="animation-delay:.82s">R</span><span style="animation-delay:.88s">I</span><span style="animation-delay:.94s">A</span>
+    <span style="animation-delay:1.5s">A</span><span style="animation-delay:1.58s">T</span><span style="animation-delay:1.66s">R</span><span style="animation-delay:1.74s">I</span><span style="animation-delay:1.82s">A</span>
   </div>
   <span class="sig mono">Sistema Atria</span>
+  <div class="load-line" aria-hidden="true"></div>
 </div>
 <div id="reveal" aria-hidden="true"></div>
 <div id="grain" aria-hidden="true"></div>
@@ -1303,38 +1306,43 @@ window.AtriaMotion = (function(){
   var loader = document.getElementById('loader');
   var reveal = document.getElementById('reveal');
   var heroH1 = document.getElementById('hero-h1');
+  var siteOpen = false;
   function openSite(){
-    if(loader && loader.parentNode) loader.remove();
-    if(reveal && reveal.parentNode) reveal.remove();
+    if(siteOpen) return; siteOpen = true;
     nav.classList.add('on');
     hero.classList.add('in');
-    if(!openSite.played){ openSite.played = true; AtriaMotion.play(heroH1, {dur:1600}); }
+    AtriaMotion.play(heroH1, {dur:1600});
     /* re-sincroniza tudo que depende de scroll/resize sem exigir interação */
     TL.update();
     window.dispatchEvent(new Event('scroll'));
     window.dispatchEvent(new Event('resize'));
     window.dispatchEvent(new CustomEvent('atria:intro-done'));
+    /* letras do hero nunca ficam presas: estado final forçado 6 s após o intro-done */
+    setTimeout(function(){
+      heroH1.querySelectorAll('.lt').forEach(function(l){ l.style.opacity = '1'; l.style.transform = 'none'; l.style.filter = 'none'; l.classList.add('lt-done'); });
+    }, 6000);
   }
-  setTimeout(function(){ loader.classList.add('done'); }, 900);
+  function clearIntro(){
+    if(loader && loader.parentNode) loader.remove();
+    if(reveal && reveal.parentNode) reveal.remove();
+  }
+  /* ritmo aprovado na v1: A monta (0,15 a 1,6 s), wordmark (1,5 a 2,1 s), barra (0,1 a 2,2 s), pausa, janela abre em 1,25 s */
+  setTimeout(function(){ loader.classList.add('done'); }, 2200);
   setTimeout(function(){
     var t0 = null, from = isMobile ? 36 : 64, to = 260;
     function step(ts){
       if(t0 === null) t0 = ts;
-      var v = c01((ts - t0) / 320);
-      var e = v * v * (3 - 2 * v);
-      /* a máscara cresce até 260vh (tamanho seguro de raster) e a tela termina por opacidade */
+      var v = c01((ts - t0) / 1250);
+      var e = v < .5 ? 4 * v * v * v : 1 - Math.pow(-2 * v + 2, 3) / 2;   /* mesma curva forte da v1 */
       reveal.style.setProperty('--hole-h', (from + (to - from) * e).toFixed(1) + 'vh');
-      reveal.style.opacity = (1 - c01((v - .5) / .5)).toFixed(3);
-      if(v < 1) requestAnimationFrame(step); else openSite();
+      reveal.style.opacity = (1 - c01((v - .7) / .3)).toFixed(3);           /* o véu some no fim */
+      if(v < 1) requestAnimationFrame(step); else clearIntro();
     }
     requestAnimationFrame(step);
-  }, 1000);
-  setTimeout(function(){ if(loader.parentNode) openSite(); }, 2200); /* segurança se o rAF não rodar */
-  /* letras do hero nunca ficam presas: força o estado final em 6 s, independente de WebGL e timeline */
-  setTimeout(function(){
-    if(loader.parentNode) openSite();
-    heroH1.querySelectorAll('.lt').forEach(function(l){ l.style.opacity = '1'; l.style.transform = 'none'; l.style.filter = 'none'; l.classList.add('lt-done'); });
-  }, 6000);
+  }, 2450);
+  setTimeout(openSite, 2900);                       /* cascata do hero e A começam com a janela ainda abrindo */
+  setTimeout(clearIntro, 3800);                     /* loader e véu fora do DOM */
+  setTimeout(function(){ openSite(); clearIntro(); }, 4600); /* segurança se o rAF não rodar */
 
   /* ============ NAV: some ao descer, volta ao subir ============ */
   var lastY = 0;
