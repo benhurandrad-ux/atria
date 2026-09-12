@@ -481,26 +481,28 @@
   }
 
   /* ============ 06 SIMULADOR ============ */
-  #investimento .sim-panel{grid-column:4/13}
-  .sim-top{display:flex;gap:clamp(16px,3vw,48px);flex-wrap:wrap;border-bottom:1px solid var(--panel-line);padding-bottom:16px;margin-bottom:clamp(24px,3vh,40px)}
-  .sim-top .mono{color:var(--blue-soft);opacity:.9}
+  #investimento .sim-panel{grid-column:3/11;max-width:1080px;width:100%;margin:0 auto;padding:40px}
+  .sim-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:24px 48px;align-items:start}
+  .sim-left,.sim-right{display:flex;flex-direction:column;min-width:0}
+  .sim-top{display:none;gap:12px 18px;flex-wrap:wrap;color:var(--blue-soft);margin-bottom:16px}
   .sim-top b{font-family:var(--mono);font-weight:500;color:var(--text);margin-left:8px;font-variant-numeric:tabular-nums}
-  .sim-title{margin-bottom:8px}
-  .sim-lead{color:var(--text-2);max-width:52ch;margin-bottom:clamp(28px,4vh,48px)}
-  .sim-result-label{color:var(--blue-soft);opacity:.9;margin-bottom:12px}
+  .sim-title{font-weight:800;font-stretch:112%;text-transform:uppercase;font-size:clamp(24px,2.2vw,32px);line-height:1.02;letter-spacing:-.01em;margin-bottom:12px}
+  .sim-lead{color:var(--text-2);font-size:15px;line-height:1.55;max-width:44ch;margin-bottom:24px}
+  .sim-result-label{color:var(--blue-soft);opacity:.9;margin-bottom:10px}
   .sim-big{
     display:flex;align-items:baseline;gap:.12em;
-    font-weight:800;font-stretch:115%;font-size:clamp(48px,7.5vw,112px);line-height:.9;letter-spacing:-.04em;
+    font-weight:800;font-stretch:115%;font-size:clamp(44px,5vw,72px);line-height:.9;letter-spacing:-.035em;
     font-variant-numeric:tabular-nums;color:var(--text);
   }
-  .sim-big .per{font-weight:300;font-stretch:100%;letter-spacing:0;font-size:.22em;text-transform:none}
-  .sim-line{color:var(--text-2);margin-top:14px;font-variant-numeric:tabular-nums}
-  .sim-state{color:var(--blue-soft);margin-top:8px;min-height:1.4em;font-variant-numeric:tabular-nums}
+  .sim-big .per{font-weight:300;font-stretch:100%;letter-spacing:0;font-size:18px;text-transform:none}
+  .sim-line{color:var(--text-2);margin-top:12px;font-variant-numeric:tabular-nums}
+  .sim-state{color:var(--blue-soft);margin-top:6px;min-height:1.4em;font-variant-numeric:tabular-nums}
   .sim-state.blink{animation:noteBlink .6s linear 1}
   @keyframes noteBlink{0%,100%{color:var(--blue-soft)}50%{color:var(--blue)}}
-  .sim-controls{display:flex;flex-direction:column;gap:48px;margin-top:clamp(32px,5vh,64px)}
+  .sim-left .note{color:var(--text-2);opacity:.9;max-width:52ch;font-size:12px;line-height:1.5;margin-top:24px}
+  .sim-controls{display:flex;flex-direction:column;gap:24px}
   .sim-ctl{display:block}
-  .sim-ctl-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
+  .sim-ctl-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
   .sim-ctl-head .mono{color:var(--blue-soft);opacity:.9}
   .sim-ctl-head output{font-weight:700;font-stretch:112%;text-transform:uppercase;font-size:clamp(16px,1.3vw,20px);line-height:1.05;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
   .sim-range{
@@ -523,30 +525,33 @@
   .sim-range::-moz-range-thumb{width:16px;height:16px;border-radius:999px;background:var(--blue);border:2px solid var(--ink)}
   .sim-range:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 4px rgba(143,163,255,.45)}
   .sim-range:focus-visible::-moz-range-thumb{box-shadow:0 0 0 4px rgba(143,163,255,.45)}
-  .sim-ruler{display:block;position:relative;height:1.4em;margin-top:8px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--text-2);text-transform:uppercase;font-variant-numeric:tabular-nums}
+  .sim-ruler{display:block;position:relative;height:1.4em;margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--text);opacity:.7;text-transform:uppercase;font-variant-numeric:tabular-nums}
   .sim-ruler span{position:absolute;top:0;left:calc(var(--p) * 1%);transform:translateX(-50%);white-space:nowrap}
   .sim-ruler span:first-child{transform:translateX(0)}
   .sim-ruler span:last-child{transform:translateX(-100%)}
-  .sim-ruler span.off{color:#2A3560}
-  .sim-foot{display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin-top:clamp(32px,5vh,56px)}
-  .sim-foot .note{color:var(--text-2);opacity:.9;max-width:60ch;font-size:13px;line-height:1.55}
-  .sim-foot .micro{color:var(--blue-soft);opacity:.9;margin-top:10px}
+  .sim-ruler span.off{opacity:.45}
+  .sim-foot{display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin-top:24px}
+  .sim-foot .btn{min-height:44px;padding:0 28px}
+  .sim-foot .micro{color:var(--blue-soft);opacity:.9}
+  .sim-foot .link-plain{padding:6px 0 4px}
+  @media(max-width:1023px){
+    #investimento .sim-panel{grid-column:1/13;padding:clamp(24px,3vw,40px)}
+    .sim-grid{grid-template-columns:1fr;gap:28px}
+  }
   @media(max-width:720px){
-    #investimento .sim-panel{grid-column:auto}
-    .sim-top{gap:12px 18px;padding-bottom:12px}
-    .sim-big{font-size:clamp(40px,11vw,48px);flex-wrap:nowrap;min-width:0}
+    #investimento .sim-panel{grid-column:auto;padding:20px}
+    .sim-grid{gap:24px}
+    .sim-big{font-size:clamp(36px,10vw,44px);flex-wrap:nowrap;min-width:0}
     .sim-big>span:first-child{white-space:nowrap}
-    .sim-top{display:none}
-    .sim-controls{gap:28px;margin-top:28px}
-    .sim-lead{margin-bottom:22px}
+    .sim-lead{margin-bottom:20px}
+    .sim-controls{gap:24px}
     .sim-range{height:44px}
     .sim-range::-webkit-slider-thumb{width:28px;height:28px;margin-top:-13px}
     .sim-range::-moz-range-thumb{width:24px;height:24px}
-    .sim-ruler{font-size:10px}
     .sim-ruler span.md{display:none}
-    .sim-foot{flex-direction:column;align-items:stretch;gap:18px}
+    .sim-foot{align-items:stretch;gap:12px}
+    .sim-foot .btn{width:100%}
   }
-
   /* ============ 07 MÉTODO (cilindro) ============ */
   #metodo{padding:0;--pin:280vh}
   .wk-stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden}
@@ -980,39 +985,36 @@
   <div class="wrap grid12">
     <div class="panel sim-panel fade" id="sim-hud" data-io>
       <span class="panel-tag">SIM / 06</span>
-      <div class="sim-top">
-        <span class="mono">Valor<b id="sim-r-value">R$ 60.000</b></span>
-        <span class="mono">Parcelas<b id="sim-r-n">24x</b></span>
-        <span class="mono">Mensal<b id="sim-r-month">R$ 2.500</b></span>
-      </div>
-      <h2 class="t-title sim-title">Seu projeto em até 60 vezes.</h2>
-      <p class="sim-lead">Tecnologia, gestão e marketing desde o primeiro mês. O sistema se paga enquanto você paga por ele.</p>
-
-      <span class="mono sim-result-label">Sua parcela</span>
-      <div class="sim-big" aria-live="polite"><span id="sim-big">R$ 2.500</span><span class="per">/mês</span></div>
-      <div class="mono sim-line" id="sim-line">24 parcelas · Projeto R$ 60.000</div>
-      <div class="mono sim-state" id="sim-state" aria-live="polite"></div>
-
-      <div class="sim-controls">
-        <label class="sim-ctl" for="sim-value">
-          <span class="sim-ctl-head"><span class="mono">Projeto</span><output id="sim-value-out" for="sim-value">R$ 60.000</output></span>
-          <input class="sim-range" type="range" id="sim-value" min="12000" max="600000" step="1000" value="60000" aria-label="Valor do projeto em reais">
-          <span class="sim-ruler" id="ruler-value" aria-hidden="true"></span>
-        </label>
-        <label class="sim-ctl" for="sim-n">
-          <span class="sim-ctl-head"><span class="mono">Parcelas</span><output id="sim-n-out" for="sim-n">24x</output></span>
-          <input class="sim-range" type="range" id="sim-n" min="1" max="60" step="1" value="24" aria-label="Número de parcelas">
-          <span class="sim-ruler" id="ruler-n" aria-hidden="true"></span>
-        </label>
-      </div>
-
-      <div class="sim-foot">
-        <div>
-          <a class="btn" href="#cta">Simular com um consultor</a>
-          <div class="mono micro">Resposta em até 1 dia útil. Sua simulação vai junto.</div>
+      <div class="sim-grid">
+        <div class="sim-left">
+          <div class="sim-top mono"><span>Valor<b id="sim-r-value">R$ 60.000</b></span><span>Parcelas<b id="sim-r-n">24x</b></span><span>Mensal<b id="sim-r-month">R$ 2.500</b></span></div>
+          <h2 class="sim-title">Seu projeto em até 60 vezes.</h2>
+          <p class="sim-lead">Tecnologia, gestão e marketing desde o primeiro mês. O sistema se paga enquanto você paga por ele.</p>
+          <span class="mono sim-result-label">Sua parcela</span>
+          <div class="sim-big" aria-live="polite"><span id="sim-big">R$ 2.500</span><span class="per">/mês</span></div>
+          <div class="mono sim-line" id="sim-line">24 parcelas · Projeto R$ 60.000</div>
+          <div class="mono sim-state" id="sim-state" aria-live="polite"></div>
+          <p class="note" id="sim-note">Parcela mínima de R$ 1.000. Simulação sem valor contratual. Prazo, juros e condições definidos após o diagnóstico, conforme o escopo do projeto.</p>
         </div>
-        <a class="link-plain" href="#cta">Ou agende o diagnóstico</a>
-        <p class="note" id="sim-note">Parcela mínima de R$ 1.000. Simulação sem valor contratual. Prazo, juros e condições definidos após o diagnóstico, conforme o escopo do projeto.</p>
+        <div class="sim-right">
+          <div class="sim-controls">
+            <label class="sim-ctl" for="sim-value">
+              <span class="sim-ctl-head"><span class="mono">Projeto</span><output id="sim-value-out" for="sim-value">R$ 60.000</output></span>
+              <input class="sim-range" type="range" id="sim-value" min="12000" max="600000" step="1000" value="60000" aria-label="Valor do projeto em reais">
+              <span class="sim-ruler" id="ruler-value" aria-hidden="true"></span>
+            </label>
+            <label class="sim-ctl" for="sim-n">
+              <span class="sim-ctl-head"><span class="mono">Parcelas</span><output id="sim-n-out" for="sim-n">24x</output></span>
+              <input class="sim-range" type="range" id="sim-n" min="1" max="60" step="1" value="24" aria-label="Número de parcelas">
+              <span class="sim-ruler" id="ruler-n" aria-hidden="true"></span>
+            </label>
+          </div>
+          <div class="sim-foot">
+            <a class="btn" href="#cta">Simular com um consultor</a>
+            <div class="mono micro">Resposta em até 1 dia útil. Sua simulação vai junto.</div>
+            <a class="link-plain" href="#cta">Ou agende o diagnóstico</a>
+          </div>
+        </div>
       </div>
     </div>
   </div>
