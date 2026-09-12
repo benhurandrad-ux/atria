@@ -575,7 +575,7 @@
     .sim-foot .btn{width:100%}
   }
   /* ============ 07 MÉTODO (cilindro) ============ */
-  #metodo{padding:0;--pin:280vh}
+  #metodo{padding:0;--pin:calc(100svh + 255vh)}
   .wk-stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden}
   .wk-back{position:absolute;inset:0;overflow:hidden;z-index:0}
   .wk-ghost{
@@ -608,7 +608,7 @@
   }
   .wk-scrim{position:absolute;inset:0;background:var(--ink);opacity:0;pointer-events:none}
   @media(max-width:720px){
-    #metodo{--pin:240vh}
+    #metodo{--pin:calc(100svh + 330vh)}
     .wk-card{width:90vw;max-width:calc(100vw - 32px);min-height:0;border-radius:18px;padding:22px 20px 24px;gap:32px}
     .wk-card h3{font-size:22px}
     .wk-ghost{font-size:min(50vw,40vh)}
@@ -1769,13 +1769,22 @@ window.AtriaMotion = (function(){
   var ghosts = Array.prototype.slice.call(document.querySelectorAll('.wk-ghost'));
   var idxEl = document.getElementById('wk-idx');
   var COUNT = cards.length, OVERSCAN = .2, RADIUS = 1350, STEP = 27;
+  var HOLD = isMobile ? .55 : .45, LERP = isMobile ? .18 : .14;
   var cur = -OVERSCAN, lastIdx = -1;
+  /* progresso em patamares: cada card fica parado por HOLD do seu trecho, a transição ocupa o resto */
+  function stepped(raw){
+    var i = Math.floor(raw), f = raw - i;
+    if(i >= COUNT - 1) return COUNT - 1;
+    var u = f < HOLD ? 0 : (f - HOLD) / (1 - HOLD);
+    return i + u * u * (3 - 2 * u);
+  }
   function updateMethod(){
     var wr = wk.getBoundingClientRect();
     if(wr.bottom < 0 || wr.top > vh) return;
     var p = c01(-wr.top / (wr.height - vh));
-    var t = p * (COUNT - 1 + OVERSCAN * 2) - OVERSCAN;
-    cur += (t - cur) * .14;
+    var st = stepped(p * (COUNT - 1));
+    var t = -OVERSCAN + (st / (COUNT - 1)) * (COUNT - 1 + OVERSCAN * 2);
+    cur += (t - cur) * LERP;
     for(var i = 0; i < COUNT; i++){
       var rel = i - cur, rad = rel * STEP * Math.PI / 180;
       var y = RADIUS * Math.sin(rad), z = RADIUS * Math.cos(rad) - RADIUS, d = Math.abs(rel);
