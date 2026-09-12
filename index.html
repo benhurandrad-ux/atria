@@ -222,7 +222,7 @@
     display:flex;align-items:center;justify-content:space-between;
     padding:20px var(--pad);
     mix-blend-mode:difference;color:#fff;
-    transform:translateY(-110%);transition:transform .7s var(--ease-out);
+    transform:translateY(-110%);transition:transform .3s var(--ease-out);will-change:transform;
   }
   nav.on{transform:translateY(0)}
   nav.hid{transform:translateY(-110%)}
@@ -237,11 +237,25 @@
     transform:scaleX(0);transform-origin:right;transition:transform .4s var(--ease-out);
   }
   .nav-links a:hover::after{transform:scaleX(1);transform-origin:left}
-  .nav-cta{border:1px solid #fff;padding:0 18px;min-height:44px;display:inline-flex;align-items:center;border-radius:2px;transition:background .3s,color .3s}
+  .nav-cta{border:1px solid #fff;padding:0 18px;min-height:44px;display:inline-flex;align-items:center;border-radius:2px;white-space:nowrap;box-sizing:border-box;transition:background .3s,color .3s}
   .nav-cta:hover{background:#fff;color:#000}
   .nav-cta::after{display:none}
   nav :focus-visible{outline-color:#fff}
-  @media(max-width:720px){.nav-links a:not(.nav-cta){display:none}}
+  @media(max-width:720px){
+    /* mobile: sem blend (pisca/inverte no iOS), faixa fixa de 64px com fundo translúcido */
+    nav{mix-blend-mode:normal;height:64px;padding:0 16px;align-items:center;background:rgba(7,12,30,.92)}
+    @supports((-webkit-backdrop-filter:blur(12px)) or (backdrop-filter:blur(12px))){
+      nav{background:rgba(7,12,30,.72);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+    }
+    nav{color:var(--text)}
+    .nav-brand svg{width:20px;height:20px}
+    .nav-brand svg polygon{fill:var(--text)}
+    .nav-brand b{font-size:13px;letter-spacing:.3em}
+    .nav-links{gap:0}
+    .nav-links a:not(.nav-cta){display:none}
+    .nav-cta{font-size:10px;letter-spacing:.12em;line-height:1;height:40px;min-height:0;padding:10px 14px;width:auto;flex:none;border-color:var(--text)}
+    .nav-cta:hover{background:var(--text);color:var(--ink)}
+  }
 
   /* ============ HUD ============ */
   #hud{position:fixed;inset:0;z-index:85;pointer-events:none;color:var(--blue-soft);opacity:.7;transition:opacity .3s linear}
