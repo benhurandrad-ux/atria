@@ -105,6 +105,7 @@
     transition-delay:var(--d,0s);
   }
   .in .fade,.fade.in{opacity:1;transform:translateY(0)}
+  @media(max-width:720px){.fade{transform:none;transition:opacity .9s var(--ease-out);transition-delay:var(--d,0s)}}
   .lt-w{display:inline-block;white-space:nowrap}
   .lt{display:inline-block;opacity:0;will-change:transform,opacity,filter}
   .lt-done{will-change:auto}
@@ -248,6 +249,7 @@
       nav{background:rgba(7,12,30,.72);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
     }
     nav{color:var(--text)}
+    nav.hid{transform:translateY(0)}
     .nav-brand svg{width:20px;height:20px}
     .nav-brand svg polygon{fill:var(--text)}
     .nav-brand b{font-size:13px;letter-spacing:.3em}
@@ -374,7 +376,8 @@
   .svc-mobile-space{display:none}
   @media(max-width:720px){
     #servicos .svc-panel{grid-column:auto}
-    .svc-mobile-space{display:block;height:36vh}
+    #servicos{padding-top:72px;padding-bottom:96px}
+    .svc-mobile-space{display:block;height:32vh}
     .svc-row{grid-template-columns:1fr 32px}
     .svc-row:hover .t-sub{transform:none}
     .svc-tag{display:none}
@@ -436,9 +439,9 @@
   .dash-row.new{animation:rowIn .6s var(--ease-out)}
   @keyframes rowIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
   @media(max-width:720px){
-    #sistema{padding-bottom:calc(var(--sec-pad) + 40vh)}
+    #sistema{padding-top:72px;padding-bottom:calc(96px + 40vh)}
     .cs-persp{margin-top:32px}
-    .cs-card{transform:scale(.95)}
+    .cs-card{transform:none}
     .dash{grid-template-columns:1fr}
     .dash-side{display:none}
     .dash-row .opt{display:none}
@@ -1363,7 +1366,8 @@ window.AtriaMotion = (function(){
 
   /* ============ NAV: some ao descer, volta ao subir ============ */
   var lastY = 0;
-  window.addEventListener('scroll', function(){
+  /* mobile: a barra de endereço do iOS dispara scroll para cima e para baixo em sequência; a nav fica fixa */
+  if(!isMobile) window.addEventListener('scroll', function(){
     var y = window.scrollY;
     if(y > 120 && y > lastY) nav.classList.add('hid'); else nav.classList.remove('hid');
     lastY = y;
@@ -1536,6 +1540,7 @@ window.AtriaMotion = (function(){
   var csSection = document.getElementById('sistema');
   var csLast = '';
   function updateCard(){
+    if(isMobile){ if(csLast !== 'none'){ csCard.style.transform = 'none'; csLast = 'none'; } return; }
     var r = csSection.getBoundingClientRect();
     if(r.bottom < 0 || r.top > vh) return;
     var p = c01((vh - r.top) / (vh + r.height * .45));
