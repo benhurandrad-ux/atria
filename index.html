@@ -323,8 +323,11 @@
   .fr-item p{font-size:14px;line-height:1.5;color:var(--text-2)}
   .fr-state{position:absolute;right:var(--pad);top:clamp(96px,14vh,140px);color:var(--blue-soft);opacity:.7}
   @media(max-width:720px){
-    #frentes{--pin:200vh}
-    #frentes .pin-inner{padding-top:80px;padding-bottom:20px}
+    #frentes{--pin:280vh}
+    #frentes .pin-inner{padding-top:88px;padding-bottom:20px}
+    .fr-title{transform:translateY(8px);transition:opacity .5s var(--ease-out),transform .5s var(--ease-out)}
+    .fr-title.on{transform:translateY(0)}
+    .fr-title-lock{top:0}
     .fr-stage{display:flex;flex-direction:column}
     .fr-title-lock{width:100%}
     .fr-title:not(.fr-title-lock){position:relative}
@@ -1488,10 +1491,11 @@ window.AtriaMotion = (function(){
   var frLastKey = '';
   function updateFronts(){
     var q = TL.fronts, inS = TL.active === 'fronts' || TL.active === 'hero' || (q > 0 && q < 1);
-    var showTitle = inS && q < .6;
-    var showLock = inS && q >= .64;
-    var showList = inS && q > .1 && q < .62;
-    var locked = q >= .8;
+    var lockAt = isMobile ? .66 : .64;
+    var showTitle = inS && q < lockAt - .04;
+    var showLock = inS && q >= lockAt;
+    var showList = inS && q > .1 && q < lockAt - .04;
+    var locked = q >= (isMobile ? .75 : .8);
     var key = [showTitle, showLock, showList, locked].join('');
     if(key === frLastKey) return;
     frLastKey = key;
@@ -2226,6 +2230,7 @@ function poseFormation() {
 /* estado de apresentação do grupo (lerpado por frame) */
 const frontsState = { pos: new THREE.Vector3(), scale: 1, opacity: 1, rough: 0.14, tPos: new THREE.Vector3(), tScale: 1, tOpacity: 1, tRough: 0.14, spinY: 0 };
 const lock = { on: false, flash: 0 };
+const LOCK_A = isMobile ? 0.55 : 0.35, LOCK_B = isMobile ? 0.75 : 0.90;
 const FOCUS_OFF = new THREE.Vector3(-0.6, 0.15, 2.4);
 const _orbit = new THREE.Vector3();
 const ORBIT_TILT = THREE.MathUtils.degToRad(18);
@@ -2233,7 +2238,7 @@ const ORBIT_TILT = THREE.MathUtils.degToRad(18);
 function updateFronts(dt, t) {
   const q = tl.fronts;
   const enter = THREE.MathUtils.smoothstep(q, 0.0, 0.18);
-  const e = THREE.MathUtils.smoothstep(q, 0.35, 0.90);
+  const e = THREE.MathUtils.smoothstep(q, LOCK_A, LOCK_B);
   const orbitSpeed = (reduced ? 0.18 : 0.32) * (1 - e * 0.85) + 0.05;
   frontsState.spinY += dt * orbitSpeed;
 
@@ -2303,7 +2308,7 @@ function targetFrontsState() {
   S.tRough = 0.14; S.tOpacity = 1;
   switch (a) {
     case 'hero': case 'fronts':
-      S.tPos.set(0, 0, 0); S.tScale = 1; break;
+      S.tPos.set(0, isMobile ? -0.1 * H : 0, 0); S.tScale = 1; break;
     case 'servicos':
       if (isMobile) { S.tPos.set(0, 0.30 * H, 0); S.tScale = 0.5; } else { S.tPos.set(0.22 * W, 0, 0); S.tScale = 0.7; }
       break;
@@ -2587,7 +2592,7 @@ function loop() {
   updateFronts(dt, t);
   updateHero(dt, t);
   updateAmbient(dt, t);
-  const e = THREE.MathUtils.smoothstep(tl.fronts, 0.35, 0.90);
+  const e = THREE.MathUtils.smoothstep(tl.fronts, LOCK_A, LOCK_B);
   frontLabels.update(camera, labelsOn && e < 0.85);
   lockLabel.update(camera, labelsOn && e > 0.92);
 
