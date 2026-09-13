@@ -204,6 +204,39 @@
   #loader .wordmark span{opacity:0;transform:translateY(12px);animation:letterUp .3s var(--ease-out) forwards}
   @keyframes letterUp{to{opacity:1;transform:translateY(0)}}
   #loader .sig{position:absolute;left:var(--pad);bottom:24px;color:var(--blue-soft);opacity:.7}
+  /* portão de entrada */
+  .enter-wrap{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:8px}
+  .enter-btn{
+    position:relative;isolation:isolate;overflow:hidden;
+    height:56px;padding:0 36px;border-radius:999px;border:0;background:var(--ink);color:var(--text);
+    font-family:var(--mono);font-weight:500;font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+    display:inline-flex;align-items:center;gap:12px;cursor:pointer;
+    opacity:0;transform:translateY(12px);
+    transition:opacity .6s var(--ease-out),transform .6s var(--ease-out);
+    box-shadow:0 0 0 0 rgba(26,63,214,.55);
+  }
+  .enter-btn.show{opacity:1;transform:translateY(0);animation:enterHalo 1.8s ease-out infinite}
+  .enter-btn.show:active{transform:scale(.97)}
+  .enter-btn.go{opacity:0;transform:scale(.9);transition:opacity .3s var(--ease-out),transform .3s var(--ease-out);animation:none}
+  /* anel: gradiente cônico girando por trás + tampa interna deixando 1px de borda */
+  .enter-btn::before{
+    content:"";position:absolute;inset:-100%;z-index:-2;
+    background:conic-gradient(from 0deg,rgba(143,163,255,.3) 0 70%,#8FA3FF 85%,rgba(143,163,255,.3) 100%);
+    animation:enterSpin 2.8s linear infinite;
+  }
+  .enter-btn::after{content:"";position:absolute;inset:1px;z-index:-1;border-radius:inherit;background:var(--ink)}
+  @keyframes enterSpin{to{transform:rotate(360deg)}}
+  @keyframes enterHalo{0%{box-shadow:0 0 0 0 rgba(26,63,214,.55)}100%{box-shadow:0 0 0 18px rgba(26,63,214,0)}}
+  .enter-btn .arr{display:inline-block;transition:transform .3s var(--ease-out)}
+  .enter-btn:hover .arr{transform:translateX(6px)}
+  .enter-btn .lt{opacity:0}
+  .enter-btn .lbl{transition:opacity .15s linear}
+  .enter-wave{
+    position:absolute;left:50%;top:28px;width:56px;height:56px;border-radius:999px;pointer-events:none;
+    border:1px solid var(--blue-soft);transform:translate(-50%,-50%) scale(1);opacity:0;
+  }
+  .enter-wave.on{animation:enterWave .4s ease-out forwards}
+  @keyframes enterWave{0%{opacity:.8;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(2.9)}}
   /* janela em forma de A que abre sobre o A cromado do hero */
   #reveal{
     position:fixed;inset:0;z-index:99;pointer-events:none;background:var(--ink);
@@ -757,13 +790,17 @@
 </svg>
 
 <!-- ============ 00 INTRO ============ -->
-<div id="loader" aria-hidden="true">
+<div id="loader">
   <svg class="a-mark" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
     <polygon class="a-stroke" points="58,8 94,112 73,112 48,42 41,42"/>
     <polygon class="a-leg" points="34,68 45,68 29,112 18,112"/>
   </svg>
   <div class="wordmark">
     <span style="animation-delay:1.5s">A</span><span style="animation-delay:1.58s">T</span><span style="animation-delay:1.66s">R</span><span style="animation-delay:1.74s">I</span><span style="animation-delay:1.82s">A</span>
+  </div>
+  <div class="enter-wrap">
+    <i class="enter-wave" id="enter-wave" aria-hidden="true"></i>
+    <button class="enter-btn" id="enter-btn" type="button"><span class="lbl" id="enter-label" data-letters="manual">Entrar</span><span class="arr" aria-hidden="true">→</span></button>
   </div>
   <span class="sig mono">Sistema Atria</span>
   <div class="load-line" aria-hidden="true"></div>
@@ -1368,23 +1405,63 @@ window.AtriaMotion = (function(){
     if(loader && loader.parentNode) loader.remove();
     if(reveal && reveal.parentNode) reveal.remove();
   }
-  /* ritmo aprovado na v1: A monta (0,15 a 1,6 s), wordmark (1,5 a 2,1 s), barra (0,1 a 2,2 s), pausa, janela abre em 1,25 s */
-  setTimeout(function(){ loader.classList.add('done'); }, 2200);
+  /* ritmo aprovado na v1: A monta (0,15 a 1,6 s), wordmark (1,5 a 2,1 s), barra (0,1 a 2,2 s); depois o loader PARA e mostra o botão */
+  var enterBtn = document.getElementById('enter-btn');
+  var enterLabel = document.getElementById('enter-label');
+  var enterWave = document.getElementById('enter-wave');
+  var enterShown = false, entering = false;
+  function runOpening(){
+    /* tempos relativos ao clique: janela abre em +250 ms (1,25 s), intro-done em +700 ms */
+    setTimeout(function(){ loader.classList.add('done'); }, 0);
+    setTimeout(function(){
+      var t0 = null, from = isMobile ? 36 : 64, to = 260;
+      function step(ts){
+        if(t0 === null) t0 = ts;
+        var v = c01((ts - t0) / 1250);
+        var e = v < .5 ? 4 * v * v * v : 1 - Math.pow(-2 * v + 2, 3) / 2;
+        reveal.style.setProperty('--hole-h', (from + (to - from) * e).toFixed(1) + 'vh');
+        reveal.style.opacity = (1 - c01((v - .7) / .3)).toFixed(3);
+        if(v < 1) requestAnimationFrame(step); else clearIntro();
+      }
+      requestAnimationFrame(step);
+    }, 250);
+    setTimeout(openSite, 700);
+    setTimeout(clearIntro, 1800);   /* segurança se o rAF não rodar */
+  }
+  function enter(withSound){
+    if(entering) return; entering = true;
+    if(withSound && window.ATRIA_SOUND){ window.ATRIA_SOUND.start(); }   /* play() síncrono dentro do gesto */
+    /* feedback imediato */
+    enterWave.classList.add('on');
+    enterLabel.style.opacity = '0';
+    setTimeout(function(){ enterLabel.textContent = 'Entrando'; enterLabel.style.opacity = '1'; }, 150);
+    enterBtn.classList.add('go');
+    runOpening();
+  }
+  enterBtn.addEventListener('click', function(){ enter(true); });
   setTimeout(function(){
-    var t0 = null, from = isMobile ? 36 : 64, to = 260;
-    function step(ts){
-      if(t0 === null) t0 = ts;
-      var v = c01((ts - t0) / 1250);
-      var e = v < .5 ? 4 * v * v * v : 1 - Math.pow(-2 * v + 2, 3) / 2;   /* mesma curva forte da v1 */
-      reveal.style.setProperty('--hole-h', (from + (to - from) * e).toFixed(1) + 'vh');
-      reveal.style.opacity = (1 - c01((v - .7) / .3)).toFixed(3);           /* o véu some no fim */
-      if(v < 1) requestAnimationFrame(step); else clearIntro();
+    enterShown = true;
+    enterBtn.classList.add('show');
+    AtriaMotion.play(enterLabel, {dur:900, blur:0, rise:8});
+  }, 2300);
+  /* magnetismo leve no desktop */
+  if(finePointer){
+    var mgX = 0, mgY = 0, mtX = 0, mtY = 0, mgRaf = 0, mgOn = false;
+    function mgLoop(){
+      mgX += (mtX - mgX) * .18; mgY += (mtY - mgY) * .18;
+      if(!enterBtn.classList.contains('go')) enterBtn.style.translate = mgX.toFixed(1) + 'px ' + mgY.toFixed(1) + 'px';
+      if(mgOn || Math.abs(mgX) > .1 || Math.abs(mgY) > .1) mgRaf = requestAnimationFrame(mgLoop); else mgRaf = 0;
     }
-    requestAnimationFrame(step);
-  }, 2450);
-  setTimeout(openSite, 2900);                       /* cascata do hero e A começam com a janela ainda abrindo */
-  setTimeout(clearIntro, 3800);                     /* loader e véu fora do DOM */
-  setTimeout(function(){ openSite(); clearIntro(); }, 4600); /* segurança se o rAF não rodar */
+    enterBtn.addEventListener('pointermove', function(e){
+      var r = enterBtn.getBoundingClientRect();
+      var dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2), dy = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
+      mtX = Math.max(-1, Math.min(1, dx)) * 8; mtY = Math.max(-1, Math.min(1, dy)) * 8;
+      mgOn = true; if(!mgRaf) mgRaf = requestAnimationFrame(mgLoop);
+    });
+    enterBtn.addEventListener('pointerleave', function(){ mtX = 0; mtY = 0; mgOn = false; if(!mgRaf) mgRaf = requestAnimationFrame(mgLoop); });
+  }
+  /* segurança: se o botão não aparecer em 4 s, a página abre sozinha, sem som */
+  setTimeout(function(){ if(!enterShown && !siteOpen && !entering){ entering = true; runOpening(); } }, 4000);
 
   /* ============ NAV: some ao descer, volta ao subir ============ */
   var lastY = 0;
@@ -2014,6 +2091,8 @@ window.AtriaMotion = (function(){
       if(on){ stop(); save('off'); pref = 'off'; }
       else { start(true); save('on'); pref = 'on'; }
     });
+    /* portão de entrada: ENTRAR liga (play síncrono no gesto); "entrar sem som" grava a preferência */
+    window.ATRIA_SOUND = { start: function(){ armed = false; save('on'); pref = 'on'; start(true); } };
     /* aba oculta: some com fade; ao voltar retoma se estava ligado */
     var resumeOnShow = false;
     document.addEventListener('visibilitychange', function(){
