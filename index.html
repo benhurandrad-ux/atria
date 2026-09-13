@@ -310,8 +310,8 @@
   /* ============ 02 FRENTES (órbita) ============ */
   #frentes{padding:0;--pin:340vh}
   #frentes .pin-inner{padding:max(calc(var(--nav-h) + 16px),14vh) var(--pad) clamp(28px,5vh,56px)}
-  .fr-title{grid-column:1/8;opacity:0;transform:translateY(24px);transition:opacity .9s var(--ease-out),transform .9s var(--ease-out);will-change:opacity,transform}
-  .fr-title.on{opacity:1;transform:translateY(0)}
+  .fr-title{grid-column:1/8;opacity:0;transform:none;transition:opacity .9s var(--ease-out);will-change:opacity}
+  .fr-title.on{opacity:1}
   .fr-title-lock{position:absolute;left:0;top:0;width:60%}
   .fr-stage{position:relative;flex:1;display:grid;grid-template-columns:repeat(12,1fr);gap:var(--gutter);align-content:start}
   .fr-sub{grid-column:1/5;color:var(--text-2);margin-top:20px;max-width:34ch;opacity:0;transition:opacity .9s var(--ease-out) .15s}
@@ -328,8 +328,7 @@
   @media(max-width:720px){
     #frentes{--pin:280vh}
     #frentes .pin-inner{padding-top:calc(var(--nav-h) + 16px);padding-bottom:20px}
-    .fr-title{transform:translateY(8px);transition:opacity .5s var(--ease-out),transform .5s var(--ease-out)}
-    .fr-title.on{transform:translateY(0)}
+    .fr-title{transition:opacity .5s var(--ease-out)}
     .fr-title-lock{top:0}
     .fr-stage{display:flex;flex-direction:column}
     .fr-title-lock{width:100%}
@@ -2246,6 +2245,27 @@ function poseFormation() {
 /* estado de apresentação do grupo (lerpado por frame) */
 const frontsState = { pos: new THREE.Vector3(), scale: 1, opacity: 1, rough: 0.14, tPos: new THREE.Vector3(), tScale: 1, tOpacity: 1, tRough: 0.14, spinY: 0 };
 const lock = { on: false, flash: 0 };
+/* entrada/saída da seção das frentes: a coluna 3D acompanha o deslocamento da seção em px (1:1 com a rolagem) */
+const frontsSection = document.getElementById('frentes');
+const follow = { y: 0, pre: 0, wasNarrative: false };
+function updateFollow() {
+  const r = frontsSection.getBoundingClientRect();
+  const vh = innerHeight;
+  const worldPerPx = world.h / vh;
+  let innerTop = 0;
+  if (r.top > 0) innerTop = r.top;                                  /* antes do pin engatar: conteúdo ainda abaixo */
+  else if (r.bottom < vh) innerTop = r.bottom - vh;                 /* depois do pin soltar: conteúdo subindo */
+  const near = r.bottom > -vh && r.top < vh;
+  const narrative = (tl.active === 'hero' || tl.active === 'fronts') && near;
+  if (narrative) {
+    follow.y = -innerTop * worldPerPx;
+    follow.pre = THREE.MathUtils.smoothstep(r.top, vh, vh * 0.3) ;    /* entra subindo junto com o título */
+  } else {
+    if (follow.wasNarrative) { frontsState.pos.y += follow.y; }     /* passa para o modo ambiente sem salto */
+    follow.y = 0; follow.pre = 0;
+  }
+  follow.wasNarrative = narrative;
+}
 const LOCK_A = isMobile ? 0.55 : 0.35, LOCK_B = isMobile ? 0.75 : 0.90;
 const FOCUS_OFF = new THREE.Vector3(-0.6, 0.15, 2.4);
 const _orbit = new THREE.Vector3();
@@ -2253,7 +2273,7 @@ const ORBIT_TILT = THREE.MathUtils.degToRad(18);
 
 function updateFronts(dt, t) {
   const q = tl.fronts;
-  const enter = THREE.MathUtils.smoothstep(q, 0.0, 0.18);
+  const enter = Math.max(THREE.MathUtils.smoothstep(q, 0.0, 0.18), follow.pre);
   const e = THREE.MathUtils.smoothstep(q, LOCK_A, LOCK_B);
   const orbitSpeed = (reduced ? 0.18 : 0.32) * (1 - e * 0.85) + 0.05;
   frontsState.spinY += dt * orbitSpeed;
@@ -2363,6 +2383,7 @@ function lerpFrontsState(dt) {
   frontsState.opacity += (frontsState.tOpacity - frontsState.opacity) * k;
   frontsState.rough   += (frontsState.tRough   - frontsState.rough)   * k;
   fronts.position.copy(frontsState.pos);
+  fronts.position.y += follow.y;
   fronts.scale.setScalar(frontsState.scale);
 }
 
@@ -2604,6 +2625,7 @@ function loop() {
   updateMouse(dt);
   updateCamera(dt, t);
   updatePulse(dt);
+  updateFollow();
   targetFrontsState();
   lerpFrontsState(dt);
   updateFronts(dt, t);
