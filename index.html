@@ -262,12 +262,25 @@
 
   /* ============ HUD ============ */
   #hud{position:fixed;inset:0;z-index:85;pointer-events:none;color:var(--blue-soft);opacity:.7;transition:opacity .3s linear}
-  html.chapter-manifesto #hud{opacity:0}
+  html.chapter-manifesto .hud-readouts,html.chapter-manifesto .hud-rail{opacity:0}
   .hud-readouts,.hud-rail{transition:opacity .3s linear,visibility 0s linear .3s}
   html.footer-in .hud-readouts,html.footer-in .hud-rail{opacity:0;visibility:hidden}
   #hud .hud-line{font-family:var(--mono);font-weight:400;font-size:10px;letter-spacing:.12em;line-height:1.3;text-transform:uppercase;white-space:nowrap;font-variant-numeric:tabular-nums}
   .hud-bl{position:absolute;left:var(--pad);bottom:22px;display:flex;flex-direction:column;gap:4px}
   .hud-br{position:absolute;right:var(--pad);bottom:22px}
+  .hud-sound{
+    position:absolute;right:calc(var(--pad) - 12px);bottom:52px;pointer-events:auto;
+    display:inline-flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;
+    font-family:var(--mono);font-weight:500;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--blue-soft);
+    background:transparent;border:0;cursor:pointer;
+  }
+  .hud-sound:hover{color:var(--text)}
+  .hud-sound .bars{display:inline-flex;align-items:flex-end;gap:2px;height:10px}
+  .hud-sound .bars i{display:block;width:2px;height:10px;background:currentColor;transform:scaleY(.25);transform-origin:bottom}
+  .hud-sound[aria-pressed="true"] .bars i{animation:soundBar 1.1s ease-in-out infinite}
+  .hud-sound[aria-pressed="true"] .bars i:nth-child(2){animation-delay:.2s}
+  .hud-sound[aria-pressed="true"] .bars i:nth-child(3){animation-delay:.4s}
+  @keyframes soundBar{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}
   .hud-rot{transition:opacity .3s linear}
   .hud-rail{position:absolute;right:max(12px,calc(var(--pad) - 36px));top:50%;transform:translateY(-50%);height:40vh;display:flex;gap:10px;align-items:stretch}
   .hud-idx{display:flex;flex-direction:column;justify-content:space-between;font-family:var(--mono);font-size:9px;letter-spacing:.1em;line-height:1;text-align:right}
@@ -278,6 +291,7 @@
   @media(max-width:720px),(pointer:coarse){
     .hud-bl,.hud-br,.hud-idx{display:none}
     .hud-rail{right:10px}
+    .hud-sound{right:4px;bottom:calc(16px + env(safe-area-inset-bottom,0px))}
   }
 
   /* ============ 01 HERO ============ */
@@ -704,6 +718,7 @@
   .foot-mark .foot-wordmark text{font-family:var(--display);font-weight:800;font-stretch:115%;fill:none;stroke:var(--blue-soft);stroke-width:3}
   .foot-bar{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding:24px var(--pad);border-top:1px solid var(--line-d)}
   .foot-bar .mono{color:var(--text-2);white-space:normal;line-height:1.5}
+  .foot-credit{flex-basis:100%;font-size:10px;opacity:.8}
   @media(max-width:720px){
     footer{min-height:0;border-radius:28px 28px 0 0}
     .foot-grid{grid-template-columns:1fr;gap:24px;padding:40px var(--pad) 28px}
@@ -780,7 +795,9 @@
   </div>
   <div class="hud-br"><span class="hud-line" id="hud-fps">60 FPS · WEBGL 2</span></div>
   </div>
+  <button class="hud-sound" id="sound-btn" type="button" aria-pressed="false" aria-label="Som ambiente"><span class="bars" aria-hidden="true"><i></i><i></i><i></i></span><span id="sound-label">Som · Off</span></button>
 </div>
+<audio id="ambient" src="assets/ambient.mp3" preload="none" loop playsinline></audio>
 
 <!-- ============ NAV ============ -->
 <nav id="nav">
@@ -1195,6 +1212,7 @@
   <div class="foot-bar">
     <span class="mono">© 2026 Atria · Tecnologia, Gestão e Marketing</span>
     <span class="mono">Minas Gerais · Brasil</span>
+    <span class="mono foot-credit">Trilha: Neon Underworld · PunchDeck · via BreakingCopyright</span>
   </div>
 </footer>
 </div>
@@ -1943,6 +1961,72 @@ window.AtriaMotion = (function(){
     document.addEventListener('visibilitychange', kick);
     window.addEventListener('atria:intro-done', function(){ fadeT0 = performance.now(); kick(); });
     init(); kick();
+  })();
+
+  /* ============ TRILHA AMBIENTE (play no primeiro gesto, fade, preferência salva) ============ */
+  (function(){
+    var audio = document.getElementById('ambient');
+    var btn = document.getElementById('sound-btn');
+    var label = document.getElementById('sound-label');
+    if(!audio || !btn) return;
+    var TARGET = .25, on = false, fadeRaf = 0, armed = true, pref = null;
+    try{ pref = localStorage.getItem('atria-sound'); }catch(e){}
+    function save(v){ try{ localStorage.setItem('atria-sound', v); }catch(e){} }
+    function setUi(playing){
+      on = playing;
+      btn.setAttribute('aria-pressed', playing ? 'true' : 'false');
+      label.textContent = playing ? 'Som · On' : 'Som · Off';
+    }
+    function fadeTo(target, ms, done){
+      cancelAnimationFrame(fadeRaf);
+      var from = audio.volume, t0 = null;
+      function step(ts){
+        if(t0 === null) t0 = ts;
+        var v = c01((ts - t0) / ms);
+        audio.volume = from + (target - from) * v;
+        if(v < 1) fadeRaf = requestAnimationFrame(step); else if(done) done();
+      }
+      fadeRaf = requestAnimationFrame(step);
+    }
+    function start(fromGesture){
+      audio.volume = 0;
+      var pr = audio.play();
+      if(pr && pr.then){
+        pr.then(function(){ setUi(true); fadeTo(TARGET, 2000); if(!fromGesture) return; })
+          .catch(function(){ setUi(false); armed = true; });
+      } else { setUi(true); fadeTo(TARGET, 2000); }
+    }
+    function stop(){
+      fadeTo(0, 1000, function(){ audio.pause(); });
+      setUi(false);
+    }
+    /* primeiro gesto do visitante: liga uma única vez, salvo se ele já desligou antes */
+    function firstGesture(){
+      if(!armed || on || pref === 'off') return;
+      armed = false;
+      start(true);
+    }
+    ['pointerdown', 'touchstart', 'keydown', 'wheel', 'scroll'].forEach(function(ev){
+      window.addEventListener(ev, firstGesture, {passive:true});
+    });
+    btn.addEventListener('click', function(){
+      armed = false;
+      if(on){ stop(); save('off'); pref = 'off'; }
+      else { start(true); save('on'); pref = 'on'; }
+    });
+    /* aba oculta: some com fade; ao voltar retoma se estava ligado */
+    var resumeOnShow = false;
+    document.addEventListener('visibilitychange', function(){
+      if(document.hidden){
+        if(on){ resumeOnShow = true; fadeTo(0, 600, function(){ audio.pause(); }); }
+      } else if(resumeOnShow){
+        resumeOnShow = false;
+        audio.volume = 0;
+        var pr = audio.play();
+        if(pr && pr.catch) pr.catch(function(){});
+        fadeTo(TARGET, 1500);
+      }
+    });
   })();
 
   /* ============ LOOP ÚNICO DO HTML (rAF contínuo, pausa com aba oculta) ============ */
