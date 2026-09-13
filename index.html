@@ -291,7 +291,8 @@
   .hero-cta{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
   .hero-foot{grid-column:10/13;color:var(--text-2);max-width:34ch;font-size:clamp(14px,1.05vw,17px)}
   .hero-rule{height:1px;background:var(--line-d);margin:0 0 clamp(24px,4vh,44px)}
-  #ascii-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0;display:block}
+  #ascii-canvas{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;opacity:0;display:block}
+  html.no-webgl #ascii-canvas{z-index:1}
   .hero-a-fallback{display:none;position:absolute;left:56%;top:52%;transform:translate(-50%,-50%);height:64vh;width:auto;z-index:0}
   .hero-a-fallback polygon{fill:url(#chromeGrad)}
   html.no-webgl .hero-a-fallback{display:block}
@@ -477,10 +478,12 @@
   }
   .man-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:var(--gutter);align-items:start}
   .man-eyebrow{grid-column:1/4;color:var(--blue);margin-bottom:clamp(28px,4vh,48px)}
-  .man-text{grid-column:1/9;color:var(--ink);line-height:1.02}
+  .man-text{grid-column:1/8;color:var(--ink);text-transform:none;font-weight:600;font-stretch:105%;font-size:clamp(20px,2.1vw,30px);line-height:1.25;letter-spacing:-.01em;max-width:34ch}
+  .man-text .rv{margin-bottom:14px}
+  .man-text .em-out{text-transform:none}
   .man-text .rv>span{transition-duration:.9s}
   .man-text .rv.in>span,.man-eyebrow.in>span{transform:translateY(0)}
-  .man-win-col{grid-column:9/13;margin-top:calc(clamp(36px,4.2vw,60px) * 3.2);position:relative}
+  .man-win-col{grid-column:9/13;margin-top:40px;position:relative}
   .gl-window{
     display:block;width:100%;aspect-ratio:1/1;height:46vh;border-radius:32px;
     outline:1px solid var(--cream-line);outline-offset:-1px;position:relative;
@@ -497,7 +500,7 @@
     .sheet{clip-path:inset(0 var(--rise-x) 0 var(--rise-x) round 28px)}
     .man-grid{grid-template-columns:1fr}
     .man-eyebrow,.man-text,.man-win-col,.man-support,.man-sig{grid-column:auto}
-    .man-text{font-size:22px}
+    .man-text{font-size:22px;max-width:100%}
     .man-win-col{margin-top:28px;width:56vw}
     .gl-window{height:56vw;aspect-ratio:1/1;border-radius:24px}
     .man-win-label{font-size:9px}
@@ -755,6 +758,7 @@
 
 <!-- canvas único atrás de tudo -->
 <canvas id="gl" aria-hidden="true"></canvas>
+<canvas id="ascii-canvas" aria-hidden="true"></canvas>
 <div id="gl-labels" aria-hidden="true">
   <span class="fr-label" data-front="tec">TEC · Tecnologia</span>
   <span class="fr-label" data-front="gst">GST · Gestão</span>
@@ -802,7 +806,6 @@
 <!-- ============ 01 HERO ============ -->
 <section id="hero" class="s-dark pin" data-chapter="hero" data-hud="Hero">
   <div class="pin-inner">
-    <canvas id="ascii-canvas" aria-hidden="true"></canvas>
     <svg class="hero-a-fallback" viewBox="16 6 80 108" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <polygon points="58,8 94,112 73,112 48,42 41,42"/>
       <polygon points="34,68 45,68 29,112 18,112"/>
@@ -993,7 +996,7 @@
         <span class="rv"><span style="--d:.16s">O crescimento depende de sorte.</span></span>
         <span class="rv"><span style="--d:.24s">A Atria existe para unir as três numa estrutura única,</span></span>
         <span class="rv"><span style="--d:.32s">onde cada parte alimenta a outra</span></span>
-        <span class="rv"><span style="--d:.40s">e o resultado deixa de ser acidente para virar <span class="em-it">processo</span>.</span></span>
+        <span class="rv"><span style="--d:.40s">e o resultado deixa de ser acidente para virar <span class="em-out">processo</span>.</span></span>
       </p>
       <div class="man-win-col">
         <div class="gl-window" id="gl-window" data-canvas-window aria-hidden="true"></div>
@@ -1842,13 +1845,31 @@ window.AtriaMotion = (function(){
     nio.observe(numGrid);
   })();
 
-  /* ============ HERO: PARTICLE DRIFT (canvas 2D, nós ASCII + feixes) ============ */
+  /* ============ PARTICLE DRIFT (camada fixa 2D em todo fundo escuro: nós ASCII + feixes) ============ */
   (function(){
     var cv = document.getElementById('ascii-canvas');
     var ctx = cv.getContext('2d');
     if(!ctx) return;
     var CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ@#$%&*()';
-    var N_NODES = isMobile ? 40 : 90, N_BEAMS = isMobile ? 10 : 25, MAX_OP = isMobile ? .5 : .7;
+    var N_NODES = isMobile ? 40 : 90, N_BEAMS = isMobile ? 10 : 25;
+    var OP_HERO = isMobile ? .5 : .7, OP_REST = isMobile ? .25 : .35;
+    var coverEls = Array.prototype.slice.call(document.querySelectorAll('.s-cream, .s-cover'));
+    var winEls = Array.prototype.slice.call(document.querySelectorAll('[data-canvas-window]'));
+    /* exposição por retângulos: não desenha quando a folha creme ou o footer cobrem a tela inteira */
+    function isExposed(){
+      var i, r;
+      for(i = 0; i < winEls.length; i++){ r = winEls[i].getBoundingClientRect(); if(r.bottom > 0 && r.top < vh) return true; }
+      var covered = [];
+      for(i = 0; i < coverEls.length; i++){
+        r = coverEls[i].getBoundingClientRect();
+        var a = Math.max(0, r.top), b = Math.min(vh, r.bottom);
+        if(b > a) covered.push([a, b]);
+      }
+      covered.sort(function(u, v){ return u[0] - v[0]; });
+      var cursor = 0;
+      for(i = 0; i < covered.length; i++){ if(covered[i][0] > cursor + 1) return true; cursor = Math.max(cursor, covered[i][1]); }
+      return cursor < vh - 1;
+    }
     var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     var W = 0, H = 0, nodes = [], beams = [];
     var mouse = { x:-9999, y:-9999 };
@@ -1856,8 +1877,7 @@ window.AtriaMotion = (function(){
     function rnd(a, b){ return a + Math.random() * (b - a); }
     function ch(){ return CHARS[Math.floor(Math.random() * CHARS.length)]; }
     function init(){
-      var r = cv.getBoundingClientRect();
-      W = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
+      W = Math.max(1, window.innerWidth); H = Math.max(1, window.innerHeight);
       cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       nodes = []; beams = [];
@@ -1910,18 +1930,14 @@ window.AtriaMotion = (function(){
     function frame(now){
       running = false;
       if(document.hidden) return;
-      var r = hero.getBoundingClientRect();
-      if(r.bottom <= 0 || r.top >= vh) return;          /* só roda com o hero na tela */
+      if(!isExposed()) return;                            /* totalmente coberto pelo creme ou pelo footer */
       var fade = fadeT0 === null ? 0 : c01((now - fadeT0) / 1500);
-      cv.style.opacity = (MAX_OP * fade * (1 - TL.hero)).toFixed(3);
+      cv.style.opacity = ((TL.active === 'hero' ? OP_HERO : OP_REST) * fade).toFixed(3);
       draw();
       running = true; requestAnimationFrame(frame);
     }
     function kick(){ if(!running){ running = true; requestAnimationFrame(frame); } }
-    if(finePointer) window.addEventListener('pointermove', function(e){
-      var r = cv.getBoundingClientRect();
-      mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top;
-    }, {passive:true});
+    if(finePointer) window.addEventListener('pointermove', function(e){ mouse.x = e.clientX; mouse.y = e.clientY; }, {passive:true});
     window.addEventListener('resize', function(){ clearTimeout(resizeTimer); resizeTimer = setTimeout(function(){ init(); kick(); }, 150); }, {passive:true});
     window.addEventListener('scroll', kick, {passive:true});
     document.addEventListener('visibilitychange', kick);
